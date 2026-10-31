@@ -2,6 +2,7 @@ import { Inter_400Regular, Inter_600SemiBold, Inter_700Bold, useFonts } from '@e
 import { SplashScreen, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider, useIsLight, useTheme } from '@/theme/ThemeContext';
 
 SplashScreen.preventAutoHideAsync(); // keep the splash screen until fonts are ready
@@ -9,7 +10,9 @@ SplashScreen.preventAutoHideAsync(); // keep the splash screen until fonts are r
 export default function RootLayout() {
   return (
     <ThemeProvider>
-      <RootNavigator />
+      <AuthProvider>
+        <RootNavigator />
+      </AuthProvider>
     </ThemeProvider>
   );
 }
