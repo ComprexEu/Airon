@@ -285,28 +285,30 @@ function DayCard({ day, weekly, takenWeekdays, onChange }: {
 
       {day.is_rest ? (
         <AppText muted>Rest day</AppText>
-      ) : day.plan_day_exercises.length === 0 ? (
-        <AppText muted>No exercises yet.</AppText>
       ) : (
-        day.plan_day_exercises.map((row) => (
-          <View key={row.id} style={{ gap: 6, paddingVertical: 6, borderTopWidth: 1, borderTopColor: t.line }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <AppText style={{ flex: 1 }}>{row.exercises?.name ?? 'Unknown exercise'}</AppText>
-              <Pressable onPress={() => removeExercise(row.id)} hitSlop={10}
-                accessibilityRole="button" accessibilityLabel={`Remove ${row.exercises?.name ?? 'exercise'}`}>
-                <Ionicons name="close" size={20} color={t.muted} />
-              </Pressable>
+        <>
+          {day.plan_day_exercises.map((row) => (
+            <View key={row.id} style={{ gap: 6, paddingVertical: 6, borderTopWidth: 1, borderTopColor: t.line }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <AppText style={{ flex: 1 }}>{row.exercises?.name ?? 'Unknown exercise'}</AppText>
+                <Pressable onPress={() => removeExercise(row.id)} hitSlop={10}
+                  accessibilityRole="button" accessibilityLabel={`Remove ${row.exercises?.name ?? 'exercise'}`}>
+                  <Ionicons name="close" size={20} color={t.muted} />
+                </Pressable>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                <NumberField label="Sets" value={row.sets} onSave={(v) => updateExercise(row.id, { sets: v })} />
+                <AppText muted>sets ×</AppText>
+                <NumberField label="Min reps" value={row.reps_min} onSave={(v) => updateExercise(row.id, { reps_min: v })} />
+                <AppText muted>–</AppText>
+                <NumberField label="Max reps" value={row.reps_max} onSave={(v) => updateExercise(row.id, { reps_max: v })} />
+                <AppText muted>reps</AppText>
+              </View>
             </View>
-            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-              <NumberField label="Sets" value={row.sets} onSave={(v) => updateExercise(row.id, { sets: v })} />
-              <AppText muted>sets ×</AppText>
-              <NumberField label="Min reps" value={row.reps_min} onSave={(v) => updateExercise(row.id, { reps_min: v })} />
-              <AppText muted>–</AppText>
-              <NumberField label="Max reps" value={row.reps_max} onSave={(v) => updateExercise(row.id, { reps_max: v })} />
-              <AppText muted>reps</AppText>
-            </View>
-          </View>
-        ))
+          ))}
+          <Button title="+ Add exercise" variant="outline"
+            onPress={() => router.push({ pathname: '/exercise-picker', params: { dayId: day.id } })} />
+        </>
       )}
     </Card>
   );

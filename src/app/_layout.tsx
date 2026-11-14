@@ -43,6 +43,10 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="plan/[id]" options={{ headerShown: true, title: 'Edit plan' }} />
+        <Stack.Screen
+          name="exercise-picker"
+          options={{ headerShown: true, title: 'Choose exercise', presentation: 'modal' }}
+        />
       </Stack>
     </>
   );
