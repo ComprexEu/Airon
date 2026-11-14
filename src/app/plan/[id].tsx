@@ -9,6 +9,7 @@ import { Input } from '@/components/Input';
 import { Screen } from '@/components/Screen';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { assignWeekdays } from '@/logic/weekdays';
 import { useTheme } from '@/theme/ThemeContext';
 import { DayWithExercises, Plan, PLAN_WITH_DAYS, PlanDay, PlanDayExercise, sortDays } from '@/types';
 
@@ -18,27 +19,6 @@ const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']; // index + 1
 function todayLocal(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-// Weekdays spread over the week for 1–7 workouts (e.g. 3 → Mon, Wed, Fri)
-const SPREAD: Record<number, number[]> = {
-  1: [1], 2: [1, 4], 3: [1, 3, 5], 4: [1, 2, 4, 5], 5: [1, 2, 3, 4, 5], 6: [1, 2, 3, 4, 5, 6], 7: [1, 2, 3, 4, 5, 6, 7],
-};
-
-/** Gives free weekdays to training days without one, in cycle order. Days that have a weekday keep it. */
-function assignWeekdays(days: DayWithExercises[]): { id: string; day_of_week: number }[] {
-  const training = days.filter((d) => !d.is_rest);
-  const taken = new Set(training.map((d) => d.day_of_week).filter((d): d is number => d !== null));
-  const preferred = [...(SPREAD[Math.min(training.length, 7)] ?? []), 1, 2, 3, 4, 5, 6, 7];
-  const changes: { id: string; day_of_week: number }[] = [];
-  for (const day of training) {
-    if (day.day_of_week !== null) continue;
-    const free = preferred.find((d) => !taken.has(d));
-    if (free === undefined) break; // more than 7 training days – the rest stay without a weekday
-    taken.add(free);
-    changes.push({ id: day.id, day_of_week: free });
-  }
-  return changes;
 }
 
 export default function PlanEditor() {
