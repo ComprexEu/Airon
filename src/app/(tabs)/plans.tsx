@@ -1,6 +1,6 @@
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, FlatList, View } from 'react-native';
+import { Alert, FlatList, Pressable, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -47,10 +47,14 @@ export default function PlansScreen() {
 
   async function createPlan() {
     setCreating(true);
-    const { error } = await supabase.from('plans').insert({ name: 'New plan', schedule_type: 'rotation' });
+    const { data, error } = await supabase
+      .from('plans')
+      .insert({ name: 'New plan', schedule_type: 'rotation' })
+      .select('id')
+      .single();
     setCreating(false);
     if (error) return Alert.alert('Could not create the plan', error.message);
-    load(); // the editor comes in the next step; for now the new plan just appears in the list
+    router.push(`/plan/${data.id}`); // straight to the editor
   }
 
   return (
@@ -73,13 +77,15 @@ export default function PlansScreen() {
         renderItem={({ item }) => {
           const active = item.id === activeId;
           return (
-            <Card style={{ borderWidth: 1.5, borderColor: active ? t.accent : 'transparent' }}>
-              {active && <AppText variant="small" style={{ color: t.accent }}>ACTIVE</AppText>}
-              <AppText variant="heading">{item.name}</AppText>
-              <AppText variant="small" muted>
-                {item.schedule_type === 'rotation' ? 'Rotation' : 'Weekly'} · days: {item.plan_days[0]?.count ?? 0}
-              </AppText>
-            </Card>
+            <Pressable onPress={() => router.push(`/plan/${item.id}`)} accessibilityRole="button">
+              <Card style={{ borderWidth: 1.5, borderColor: active ? t.accent : 'transparent' }}>
+                {active && <AppText variant="small" style={{ color: t.accent }}>ACTIVE</AppText>}
+                <AppText variant="heading">{item.name}</AppText>
+                <AppText variant="small" muted>
+                  {item.schedule_type === 'rotation' ? 'Rotation' : 'Weekly'} · days: {item.plan_days[0]?.count ?? 0}
+                </AppText>
+              </Card>
+            </Pressable>
           );
         }}
         ListFooterComponent={

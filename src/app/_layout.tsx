@@ -39,7 +39,11 @@ function RootNavigator() {
           headerTintColor: t.text,
           headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
         }}
-      />
+      >
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="plan/[id]" options={{ headerShown: true, title: 'Edit plan' }} />
+      </Stack>
     </>
   );
 }
