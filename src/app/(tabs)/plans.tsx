@@ -69,6 +69,7 @@ export default function PlansScreen() {
           <View style={{ gap: 12, marginBottom: 4 }}>
             <AppText variant="title">Plans</AppText>
             <Button title="New plan" onPress={createPlan} loading={creating} />
+            <Button title="Explore plans" variant="outline" onPress={() => router.push('/explore')} />
           </View>
         }
         ListEmptyComponent={

@@ -383,7 +383,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      copy_plan: { Args: { source_plan_id: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
