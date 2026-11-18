@@ -384,6 +384,7 @@ export type Database = {
     }
     Functions: {
       copy_plan: { Args: { source_plan_id: string }; Returns: string }
+      delete_my_account: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

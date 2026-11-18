@@ -89,12 +89,6 @@ export default function PlansScreen() {
             </Pressable>
           );
         }}
-        ListFooterComponent={
-          // temporary: moves to the Account screen in week 5
-          <View style={{ marginTop: 12 }}>
-            <Button title="Sign out" variant="outline" onPress={() => supabase.auth.signOut()} />
-          </View>
-        }
       />
     </Screen>
   );

@@ -3,7 +3,7 @@ import { SplashScreen, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { AuthProvider } from '@/context/AuthContext';
-import { ThemeProvider, useIsLight, useTheme } from '@/theme/ThemeContext';
+import { ThemeProvider, useIsLight, useTheme, useThemeSettings } from '@/theme/ThemeContext';
 
 SplashScreen.preventAutoHideAsync(); // keep the splash screen until fonts are ready
 
@@ -20,13 +20,14 @@ export default function RootLayout() {
 function RootNavigator() {
   const t = useTheme();
   const isLight = useIsLight();
+  const { ready: themeReady } = useThemeSettings();
   const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_600SemiBold, Inter_700Bold });
 
   useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync();
-  }, [fontsLoaded]);
+    if (fontsLoaded && themeReady) SplashScreen.hideAsync();
+  }, [fontsLoaded, themeReady]);
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded || !themeReady) return null;
 
   return (
     <>

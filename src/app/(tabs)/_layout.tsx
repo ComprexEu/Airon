@@ -22,9 +22,10 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="plans" options={{ title: 'Plans', tabBarIcon: tabIcon('clipboard-outline') }} />
-      <Tabs.Screen name="progress" options={{ title: 'Progress', tabBarIcon: tabIcon('stats-chart-outline') }} />
+      <Tabs.Screen name="progress" options={{ title: 'Progress', tabBarIcon: tabIcon('trending-up-outline') }} />
       <Tabs.Screen name="index" options={{ title: 'Today', tabBarIcon: tabIcon('barbell-outline') }} />
       <Tabs.Screen name="agent" options={{ title: 'Agent', tabBarIcon: tabIcon('sparkles-outline') }} />
+      <Tabs.Screen name="account" options={{ title: 'Account', tabBarIcon: tabIcon('person-circle-outline') }} />
     </Tabs>
   );
 }
