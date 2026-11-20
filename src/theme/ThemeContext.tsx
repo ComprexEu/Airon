@@ -1,12 +1,21 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useColorScheme } from 'react-native';
+import { supabase } from '@/lib/supabase';
 import { ACCENTS, AccentKey, darkTheme, lightTheme, Theme, ThemeMode } from './colors';
 
 const STORAGE_KEY = 'airon.theme';
 
 type Settings = { mode: ThemeMode; accent: AccentKey };
 const DEFAULTS: Settings = { mode: 'system', accent: 'steel' };
+
+/** Settings from storage or the profile; unknown values fall back to the defaults. */
+function parseSettings(saved: { mode?: unknown; accent?: unknown }): Settings {
+  return {
+    mode: saved.mode === 'dark' || saved.mode === 'light' ? saved.mode : 'system',
+    accent: typeof saved.accent === 'string' && saved.accent in ACCENTS ? (saved.accent as AccentKey) : DEFAULTS.accent,
+  };
+}
 
 type ThemeState = {
   theme: Theme;
@@ -31,19 +40,31 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
   const [ready, setReady] = useState(false);
 
-  // Read the saved choice once on start
+  // Settings live in two places: on the phone, so the app starts in the right theme at once,
+  // and in the profile, so they follow the user to another phone after sign-in
   useEffect(() => {
+    // 1. quick start from the phone's storage
     AsyncStorage.getItem(STORAGE_KEY)
       .then((raw) => {
-        if (!raw) return;
-        const saved = JSON.parse(raw) as Partial<Settings>;
-        setSettings({
-          mode: saved.mode === 'dark' || saved.mode === 'light' ? saved.mode : 'system',
-          accent: saved.accent && saved.accent in ACCENTS ? saved.accent : DEFAULTS.accent,
-        });
+        if (raw) setSettings(parseSettings(JSON.parse(raw)));
       })
       .catch(() => {}) // broken or missing data: keep the defaults
       .finally(() => setReady(true));
+
+    // 2. after sign-in, take the settings from the profile (e.g. set on another phone)
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event !== 'SIGNED_IN' || !session) return;
+      // not awaited inside the listener: Supabase waits for listeners before finishing the sign-in
+      setTimeout(async () => {
+        const { data: profile } = await supabase
+          .from('profiles').select('theme_mode, accent').eq('id', session.user.id).single();
+        if (!profile) return;
+        const next = parseSettings({ mode: profile.theme_mode, accent: profile.accent });
+        setSettings(next);
+        AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
+      }, 0);
+    });
+    return () => data.subscription.unsubscribe();
   }, []);
 
   const value = useMemo<ThemeState>(() => {
@@ -55,6 +76,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const next = { ...settings, ...patch };
       setSettings(next);
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
+      // also to the profile; offline the choice still stays on this phone
+      supabase.auth.getSession().then(({ data }) => {
+        if (!data.session) return;
+        supabase.from('profiles')
+          .update({ theme_mode: next.mode, accent: next.accent })
+          .eq('id', data.session.user.id)
+          .then(() => {});
+      });
     };
 
     return {

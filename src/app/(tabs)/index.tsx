@@ -1,11 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, TextInput, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
+import { showError } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import { AdvanceMode, getCurrentDay, ScheduleType } from '@/logic/rotation';
 import { useTheme } from '@/theme/ThemeContext';
@@ -13,6 +15,10 @@ import { DayWithExercises, Plan, sortDays } from '@/types';
 
 type SetEntry = { weight: string; reps: string; done: boolean };
 type LastResult = { weight: number; reps: number };
+
+// Typed sets are kept on the phone, so they survive the app being closed in the middle of a workout
+const DRAFT_KEY = 'airon-workout-draft';
+type Draft = { dayId: string; date: string; entries: Record<string, SetEntry[]> };
 
 function isToday(iso: string) {
   return new Date(iso).toDateString() === new Date().toDateString();
@@ -38,7 +44,7 @@ export default function TodayScreen() {
       .maybeSingle();
     if (error) {
       setLoading(false);
-      return Alert.alert('Could not load your plan', error.message);
+      return showError(error, 'Could not load your plan');
     }
     if (!active?.plans) {
       setPlan(null);
@@ -57,7 +63,7 @@ export default function TodayScreen() {
       .maybeSingle();
     if (sessionError) {
       setLoading(false);
-      return Alert.alert('Could not load your history', sessionError.message);
+      return showError(sessionError, 'Could not load your history');
     }
 
     // 3. Which day is today
@@ -85,7 +91,7 @@ export default function TodayScreen() {
         .limit(200);
       if (setsError) {
         setLoading(false);
-        return Alert.alert('Could not load your last results', setsError.message);
+        return showError(setsError, 'Could not load your last results');
       }
       for (const s of sets) {
         if (!lastByExercise[s.exercise_id]) lastByExercise[s.exercise_id] = { weight: s.weight, reps: s.reps };
@@ -103,6 +109,17 @@ export default function TodayScreen() {
       }));
     }
 
+    // 6. A draft of the same plan day from today wins over the prefilled values
+    //    (only for exercises whose number of sets did not change in the meantime)
+    const draft: Draft | null = await AsyncStorage.getItem(DRAFT_KEY)
+      .then((raw) => (raw ? JSON.parse(raw) : null))
+      .catch(() => null);
+    if (draft && current && draft.dayId === current.id && draft.date === new Date().toDateString()) {
+      for (const [rowId, sets] of Object.entries(initial)) {
+        if (draft.entries[rowId]?.length === sets.length) initial[rowId] = draft.entries[rowId];
+      }
+    }
+
     setPlan(planRow);
     setDay(current);
     setByCompletion(scheduleType === 'rotation' && advanceMode === 'completion');
@@ -113,6 +130,13 @@ export default function TodayScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  // Save a draft after every set change
+  useEffect(() => {
+    if (!day || Object.keys(entries).length === 0) return;
+    const draft: Draft = { dayId: day.id, date: new Date().toDateString(), entries };
+    AsyncStorage.setItem(DRAFT_KEY, JSON.stringify(draft)).catch(() => {});
+  }, [day, entries]);
 
   // Change one field of one set – always create NEW objects, never mutate the old ones
   function updateSet(rowId: string, index: number, changes: Partial<SetEntry>) {
@@ -139,7 +163,7 @@ export default function TodayScreen() {
       .single();
     if (error) {
       setSaving(false);
-      return Alert.alert('Could not save the workout', error.message); // the data stays on screen (NF-05)
+      return showError(error, 'Could not save the workout'); // the data stays on screen (NF-05)
     }
 
     if (withSets) {
@@ -160,17 +184,22 @@ export default function TodayScreen() {
         // without its sets the session would move the cycle on, so remove it and keep the data on screen
         await supabase.from('workout_sessions').delete().eq('id', session.id);
         setSaving(false);
-        return Alert.alert('Could not save the sets', setsError.message);
+        return showError(setsError, 'Could not save the sets');
       }
     }
 
+    await AsyncStorage.removeItem(DRAFT_KEY).catch(() => {}); // saved for real, the draft is no longer needed
     setSaving(false);
     load(); // the cycle moves on to the next day
   }
 
   function finishWorkout() {
-    const doneCount = Object.values(entries).flat().filter((s) => s.done).length;
-    if (doneCount === 0) return Alert.alert('No sets', 'Tick at least one completed set.');
+    const done = Object.values(entries).flat().filter((s) => s.done);
+    if (done.length === 0) return Alert.alert('No sets', 'Tick at least one completed set.');
+    // weight may be 0 (bodyweight exercises), reps may not
+    if (done.some((s) => !(parseInt(s.reps, 10) > 0))) {
+      return Alert.alert('Missing reps', 'Enter the number of reps for every ticked set.');
+    }
     saveSession(true);
   }
 

@@ -27,9 +27,10 @@ export default function ProgressScreen() {
 
   // Summary: workout count, exercises worth a chart, weekly sets per muscle group
   async function loadSummary() {
+    // Only sessions with at least one set: "Rested – next" also saves a session, but a rest day is not a workout
     const { count } = await supabase
       .from('workout_sessions')
-      .select('*', { count: 'exact', head: true })
+      .select('id, workout_sets!inner(id)', { count: 'exact', head: true })
       .gte('started_at', daysAgo(90));
     setSessionsCount(count ?? 0);
 

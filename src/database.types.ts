@@ -39,6 +39,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          proposal_id: string | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          proposal_id?: string | null
+          role: string
+          user_id?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          proposal_id?: string | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_messages_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "plan_proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exercises: {
         Row: {
           created_at: string
@@ -157,6 +199,48 @@ export type Database = {
           },
         ]
       }
+      plan_proposals: {
+        Row: {
+          created_at: string
+          id: string
+          plan_id: string | null
+          proposed_plan: Json
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          plan_id?: string | null
+          proposed_plan: Json
+          status?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          plan_id?: string | null
+          proposed_plan?: Json
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_proposals_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_proposals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plans: {
         Row: {
           copied_from: string | null
@@ -216,19 +300,25 @@ export type Database = {
       }
       profiles: {
         Row: {
+          accent: string
           created_at: string
           display_name: string | null
           id: string
+          theme_mode: string
         }
         Insert: {
+          accent?: string
           created_at?: string
           display_name?: string | null
           id: string
+          theme_mode?: string
         }
         Update: {
+          accent?: string
           created_at?: string
           display_name?: string | null
           id?: string
+          theme_mode?: string
         }
         Relationships: []
       }
@@ -383,6 +473,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_proposal: { Args: { proposal_id: string }; Returns: string }
       copy_plan: { Args: { source_plan_id: string }; Returns: string }
       delete_my_account: { Args: never; Returns: undefined }
     }

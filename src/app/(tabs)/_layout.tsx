@@ -1,4 +1,6 @@
 import { Redirect, Tabs } from 'expo-router';
+import { View } from 'react-native';
+import { OfflineBanner } from '@/components/OfflineBanner';
 import { tabIcon } from '@/components/TabIcon';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/theme/ThemeContext';
@@ -11,7 +13,9 @@ export default function TabsLayout() {
   if (!session) return <Redirect href="/login" />; // no session -> sign in
 
   return (
-    <Tabs
+    <View style={{ flex: 1, backgroundColor: t.bg }}>
+      <OfflineBanner />
+      <Tabs
       screenOptions={{
         headerShown: false,
         sceneStyle: { backgroundColor: t.bg },
@@ -26,6 +30,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="index" options={{ title: 'Today', tabBarIcon: tabIcon('barbell-outline') }} />
       <Tabs.Screen name="agent" options={{ title: 'Agent', tabBarIcon: tabIcon('sparkles-outline') }} />
       <Tabs.Screen name="account" options={{ title: 'Account', tabBarIcon: tabIcon('person-circle-outline') }} />
-    </Tabs>
+      </Tabs>
+    </View>
   );
 }

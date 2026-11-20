@@ -1,11 +1,12 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, FlatList, Pressable, View } from 'react-native';
+import { FlatList, Pressable, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
 import { useAuth } from '@/context/AuthContext';
+import { showError } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/theme/ThemeContext';
 
@@ -37,7 +38,7 @@ export default function PlansScreen() {
       supabase.from('user_active_plans').select('plan_id').maybeSingle(),
     ]);
     setLoading(false);
-    if (plansRes.error) return Alert.alert('Could not load plans', plansRes.error.message);
+    if (plansRes.error) return showError(plansRes.error, 'Could not load plans');
     setPlans(plansRes.data);
     setActiveId(activeRes.data?.plan_id ?? null);
   }, [userId]);
@@ -53,7 +54,7 @@ export default function PlansScreen() {
       .select('id')
       .single();
     setCreating(false);
-    if (error) return Alert.alert('Could not create the plan', error.message);
+    if (error) return showError(error, 'Could not create the plan');
     router.push(`/plan/${data.id}`); // straight to the editor
   }
 

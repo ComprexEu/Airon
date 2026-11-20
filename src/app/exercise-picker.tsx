@@ -6,6 +6,7 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Input } from '@/components/Input';
 import { useAuth } from '@/context/AuthContext';
+import { showError } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/theme/ThemeContext';
 import type { Exercise } from '@/types';
@@ -37,7 +38,7 @@ export default function ExercisePicker() {
         .limit(50);
       if (query.trim()) q = q.ilike('name', `%${query.trim()}%`);
       const { data, error } = await q;
-      if (error) return Alert.alert('Could not load exercises', error.message);
+      if (error) return showError(error, 'Could not load exercises');
       setExercises(data);
     }, 250);
     return () => clearTimeout(timer); // cancel the previous delayed query
@@ -58,7 +59,7 @@ export default function ExercisePicker() {
       .from('plan_day_exercises')
       .insert({ plan_day_id: dayId, exercise_id: exerciseId, position: (lastRow?.position ?? -1) + 1 });
     setSaving(false);
-    if (error) return Alert.alert('Could not add the exercise', error.message);
+    if (error) return showError(error, 'Could not add the exercise');
     router.back(); // the editor reloads itself thanks to useFocusEffect
   }
 
@@ -70,7 +71,7 @@ export default function ExercisePicker() {
       .insert({ name: query.trim(), muscle_group: customMuscle, created_by: userId })
       .select('id')
       .single();
-    if (error) return Alert.alert('Could not create the exercise', error.message);
+    if (error) return showError(error, 'Could not create the exercise');
     pick(data.id);
   }
 

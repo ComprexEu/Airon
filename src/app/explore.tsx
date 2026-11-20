@@ -1,10 +1,11 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, FlatList, Pressable, View } from 'react-native';
+import { FlatList, Pressable, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { useAuth } from '@/context/AuthContext';
+import { showError } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/theme/ThemeContext';
 
@@ -60,7 +61,7 @@ export default function ExploreScreen() {
       if (level) q = q.eq('level', level);
       const { data, error } = await q;
       setLoading(false);
-      if (error) return Alert.alert('Could not load plans', error.message);
+      if (error) return showError(error, 'Could not load plans');
       // Own plans are filtered out here, not with .neq('owner_id', ...) in the query:
       // featured plans have owner_id = null, and in SQL null <> 'abc' is not true, so they would vanish too
       setPlans(data.filter((p) => p.owner_id !== userId));
@@ -71,7 +72,7 @@ export default function ExploreScreen() {
     setCopyingId(planId);
     const { data: newId, error } = await supabase.rpc('copy_plan', { source_plan_id: planId });
     setCopyingId(null);
-    if (error) return Alert.alert('Could not copy the plan', error.message);
+    if (error) return showError(error, 'Could not copy the plan');
     router.replace(`/plan/${newId}`); // straight to the copy's editor; "back" returns to the plan list
   }
 

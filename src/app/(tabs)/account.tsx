@@ -2,9 +2,11 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
 import { AppText } from '@/components/AppText';
+import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
 import { useAuth } from '@/context/AuthContext';
+import { showError } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import { ACCENTS, AccentKey, ThemeMode } from '@/theme/colors';
 import { useTheme, useThemeSettings } from '@/theme/ThemeContext';
@@ -28,6 +30,7 @@ export default function AccountScreen() {
   const { settings, isLight, setMode, setAccent } = useThemeSettings();
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const email = session?.user.email;
 
   useFocusEffect(useCallback(() => {
@@ -47,12 +50,27 @@ export default function AccountScreen() {
     ]);
   }
 
+  function confirmClearAgent() {
+    Alert.alert('Clear the agent chat?', 'All messages with the agent will be deleted.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Clear', style: 'destructive', onPress: clearAgent },
+    ]);
+  }
+
+  async function clearAgent() {
+    if (!session) return;
+    setClearing(true);
+    const { error } = await supabase.from('agent_messages').delete().eq('user_id', session.user.id);
+    setClearing(false);
+    if (error) showError(error, 'Could not clear the chat');
+  }
+
   async function deleteAccount() {
     setDeleting(true);
     const { error } = await supabase.rpc('delete_my_account');
     if (error) {
       setDeleting(false);
-      Alert.alert('Could not delete the account', error.message);
+      showError(error, 'Could not delete the account');
       return;
     }
     await supabase.auth.signOut(); // the tabs layout then redirects to the login screen
@@ -131,6 +149,9 @@ export default function AccountScreen() {
             })}
           </View>
         </Card>
+
+        {/* Agent */}
+        <Button title="Clear agent chat" variant="outline" onPress={confirmClearAgent} loading={clearing} />
 
         <View style={{ flex: 1 }} />
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Alert } from 'react-native';
 import { Link } from 'expo-router';
+import { showError } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import { Screen } from '@/components/Screen';
 import { AppText } from '@/components/AppText';
@@ -25,7 +26,7 @@ export default function RegisterScreen() {
       options: { data: { display_name: name.trim() } }, // saved to profiles by the trigger
     });
     setLoading(false);
-    if (error) Alert.alert('Could not create the account', error.message);
+    if (error) showError(error, 'Could not create the account');
   }
 
   return (

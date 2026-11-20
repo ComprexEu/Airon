@@ -8,6 +8,7 @@ import { Card } from '@/components/Card';
 import { Input } from '@/components/Input';
 import { Screen } from '@/components/Screen';
 import { useAuth } from '@/context/AuthContext';
+import { showError } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import { assignWeekdays } from '@/logic/weekdays';
 import { useTheme } from '@/theme/ThemeContext';
@@ -32,7 +33,7 @@ export default function PlanEditor() {
 
   const load = useCallback(async () => {
     const { data, error } = await supabase.from('plans').select(PLAN_WITH_DAYS).eq('id', id).single();
-    if (error) return Alert.alert('Could not load the plan', error.message);
+    if (error) return showError(error, 'Could not load the plan');
     const { plan_days, ...planRow } = data;
     setPlan(planRow);
     setName(planRow.name);
@@ -44,7 +45,7 @@ export default function PlanEditor() {
   // One function to save changes to the plan
   async function updatePlan(changes: Partial<Plan>) {
     const { error } = await supabase.from('plans').update(changes).eq('id', id);
-    if (error) Alert.alert('Could not save', error.message);
+    if (error) showError(error, 'Could not save');
     load();
   }
 
@@ -54,7 +55,7 @@ export default function PlanEditor() {
     if (type === 'weekly') {
       for (const change of assignWeekdays(days)) {
         const { error } = await supabase.from('plan_days').update({ day_of_week: change.day_of_week }).eq('id', change.id);
-        if (error) return Alert.alert('Could not switch', error.message);
+        if (error) return showError(error, 'Could not switch');
       }
     }
     updatePlan({ schedule_type: type });
@@ -76,7 +77,7 @@ export default function PlanEditor() {
       is_rest: isRest,
       day_of_week: dayOfWeek,
     });
-    if (error) Alert.alert('Could not add the day', error.message);
+    if (error) showError(error, 'Could not add the day');
     load();
   }
 
@@ -86,7 +87,7 @@ export default function PlanEditor() {
     const { error } = await supabase
       .from('user_active_plans')
       .upsert({ user_id: userId, plan_id: id, started_on: todayLocal() });
-    if (error) return Alert.alert('Could not set the active plan', error.message);
+    if (error) return showError(error, 'Could not set the active plan');
     Alert.alert('Done', 'This is now your active plan.');
   }
 
@@ -97,7 +98,7 @@ export default function PlanEditor() {
         text: 'Delete', style: 'destructive',
         onPress: async () => {
           const { error } = await supabase.from('plans').delete().eq('id', id);
-          if (error) return Alert.alert('Could not delete the plan', error.message);
+          if (error) return showError(error, 'Could not delete the plan');
           router.back();
         },
       },
@@ -193,7 +194,7 @@ function DayCard({ day, weekly, takenWeekdays, onChange }: {
 
   async function updateDay(changes: Partial<PlanDay>) {
     const { error } = await supabase.from('plan_days').update(changes).eq('id', day.id);
-    if (error) Alert.alert('Could not save', error.message); // e.g. two days on the same weekday
+    if (error) showError(error, 'Could not save'); // e.g. two days on the same weekday
     onChange();
   }
 
@@ -204,7 +205,7 @@ function DayCard({ day, weekly, takenWeekdays, onChange }: {
         text: 'Remove', style: 'destructive',
         onPress: async () => {
           const { error } = await supabase.from('plan_days').delete().eq('id', day.id); // exercises go by cascade
-          if (error) Alert.alert('Could not remove the day', error.message);
+          if (error) showError(error, 'Could not remove the day');
           onChange();
         },
       },
@@ -213,14 +214,14 @@ function DayCard({ day, weekly, takenWeekdays, onChange }: {
 
   async function updateExercise(rowId: string, changes: Partial<PlanDayExercise>) {
     const { error } = await supabase.from('plan_day_exercises').update(changes).eq('id', rowId);
-    if (error) Alert.alert('Could not save', error.message); // e.g. max reps lower than min reps
+    if (error) showError(error, 'Could not save'); // e.g. max reps lower than min reps
     onChange();
     return !error;
   }
 
   async function removeExercise(rowId: string) {
     const { error } = await supabase.from('plan_day_exercises').delete().eq('id', rowId);
-    if (error) Alert.alert('Could not remove the exercise', error.message);
+    if (error) showError(error, 'Could not remove the exercise');
     onChange();
   }
 
